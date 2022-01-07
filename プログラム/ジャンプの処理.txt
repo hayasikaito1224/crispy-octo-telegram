@@ -1,0 +1,36 @@
+//-----------------------------------------------------------------------------------------------
+//ジャンプの処理(プレイヤーに今ジャンプできるかのbool(初期値はfalse)を持たして、第二引数に入れて)
+//-----------------------------------------------------------------------------------------------
+void CPlayer::Jump(float fGravity, bool& bJump)
+{
+	CXInput *pXInput = CManager::GetXInput();
+	//ジャンプの移動量に加算
+	if (pXInput->GetButtonTrigger(XINPUT_GAMEPAD_A) == true && bJump == false)	//すぺーす
+	{
+		fGravity = 13.0f;
+		bJump = true;
+	}
+
+}
+//-----------------------------------------------------------------------------------------------
+//重力の処理(プレイヤーに重力を減らす値(初期値は減らしたい正の数)を持たして、第三引数に入れて)
+//-----------------------------------------------------------------------------------------------
+void CPlayer::Gravity(D3DXVECTOR3 & pos, float& fGravity, const float& fGravitySpeed, bool & bJump)
+{
+	////重力加算
+	if (m_fGravitySpeed > 0.0f)
+	{
+		fGravity -= m_fGravitySpeed;
+		pos.y += m_fGravity;
+	}
+	//床についたかどうか
+	if (pos.y <= 0.0f)
+	{
+		//ゲージを増やす
+		pos.y = 0.0f;
+		fGravity = 0.0f;
+		bJump = false;
+		//CManager::GetSound()->PlaySoundA(CSound::SOUND_LABEL_SE_WATER_FALL);
+	}
+}
+
