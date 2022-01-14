@@ -1,0 +1,187 @@
+//=============================================================================
+// プレイヤーの慣性
+//=============================================================================
+void CPlayer::Acceleration(D3DXVECTOR3 speed)
+{
+	m_Speed = speed;
+
+	//------------------------------------------------
+	// 左右入力していない状態
+	//------------------------------------------------
+		// 0に戻り続ける処理
+		if (m_Speed.x > 0.0f)
+		{
+			m_Speed.x -= INERTIA;
+
+			if (m_Speed.x <= 0.0f)
+			{
+				m_Speed.x = 0.0f;
+			}
+		}
+
+		else if (m_Speed.x < 0.0f)
+		{
+			m_Speed.x += INERTIA;
+
+			if (m_Speed.x >= 0.0f)
+			{
+				m_Speed.x = 0.0f;
+			}
+		}
+
+	//------------------------------------------------
+	// 上下入力していない状態
+	//------------------------------------------------
+		// 0に戻り続ける処理
+		if (m_Speed.z > 0.0f)
+		{
+			m_Speed.z -= INERTIA;
+
+			if (m_Speed.z <= 0.0f)
+			{
+				m_Speed.z = 0.0f;
+			}
+		}
+
+		else if (m_Speed.z < 0.0f)
+		{
+			m_Speed.z += INERTIA;
+
+			if (m_Speed.z >= 0.0f)
+			{
+				m_Speed.z = 0.0f;
+			}
+		}
+}
+
+//-----------------------------------------------------------------
+// 移動処理
+//-----------------------------------------------------------------
+void CPlayer::Move(void)
+{
+	// クラスの取得
+	CXInput *pXInput = CManager::GetInstance()->GetXInput();
+	CInputkeyboard *pKey = CManager::GetInstance()->GetKeyboard();
+	CCamera *pCamera = CManager::GetInstance()->GetCamera()[0];
+
+	Acceleration(m_Speed);			// 慣性
+
+	//=============================================================================
+	// 移動する(座標更新)
+	//=============================================================================
+	if (m_Speed.x != 0.0f)
+	{
+		if (m_Speed.x > 0.0f)
+		{
+			m_pos.x += m_Speed.x * sinf(m_rot.y);
+			m_pos.z += m_Speed.x * cosf(m_rot.y);
+		}
+
+		else if (m_Speed.x < 0.0f)
+		{
+			m_pos.x -= m_Speed.x * sinf(m_rot.y);
+			m_pos.z -= m_Speed.x * cosf(m_rot.y);
+		}
+		m_rot.x += m_Speed.x * cosf(m_rot.y) * 0.05f;
+		m_rot.z += m_Speed.x * sinf(m_rot.y) * 0.05f;
+	}
+	if (m_Speed.z != 0.0f)
+	{
+		if (m_Speed.z > 0.0f)
+		{
+			m_pos.x += m_Speed.z * sinf(m_rot.y);
+			m_pos.z += m_Speed.z * cosf(m_rot.y);
+		}
+
+		else if (m_Speed.z < 0.0f)
+		{
+			m_pos.x -= m_Speed.z * sinf(m_rot.y);
+			m_pos.z -= m_Speed.z * cosf(m_rot.y);
+
+		}
+		m_rot.x += m_Speed.z * sinf(m_rot.y) * 0.05f;
+		m_rot.z += m_Speed.z * cosf(m_rot.y) * 0.05f;
+	}
+
+
+	//==========================================================================================================
+	// 移動入力をする
+	//==========================================================================================================
+	if (pXInput->GetGamePad()->m_state.Gamepad.sThumbLX >= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE ||
+		pXInput->GetGamePad()->m_state.Gamepad.sThumbLX <= -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE ||
+		pXInput->GetGamePad()->m_state.Gamepad.sThumbLY >= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE ||
+		pXInput->GetGamePad()->m_state.Gamepad.sThumbLY <= -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+	{
+		//  奥
+		if (pXInput->GetGamePad()->m_state.Gamepad.sThumbLY >= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+		{
+			m_Speed.x += 0.2f;
+		}
+		// 手前
+		else if (pXInput->GetGamePad()->m_state.Gamepad.sThumbLY <= -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+		{
+			m_Speed.x -= 0.2f;
+		}
+		// 右
+		if (pXInput->GetGamePad()->m_state.Gamepad.sThumbLX >= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+		{
+			m_Speed.z += 0.2f;
+		}
+		// 左
+		else if (pXInput->GetGamePad()->m_state.Gamepad.sThumbLX <= -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+		{
+			m_Speed.z -= 0.2f;
+		}
+
+		// プレイヤーの角度を計算
+		float Ang = atan2f(m_Speed.z,m_Speed.x);
+		// カメラの向きを足す
+		Ang = Ang + pCamera->GetRot().y;
+		m_rot.y = Ang;
+	}
+	//m_pModel->SetRot(D3DXVECTOR3(sinf(m_ModelRot.x), sinf(m_ModelRot.y), sinf(m_ModelRot.z)));
+
+
+	//==========================================================================================================
+	// 回転限界
+	//==========================================================================================================
+	if (m_rot.x < -D3DX_PI)
+	{
+		m_rot.x = D3DX_PI;
+	}
+	if (m_rot.x > D3DX_PI)
+	{
+		m_rot.x = -D3DX_PI;
+	}
+
+	if (m_rot.z < -D3DX_PI)
+	{
+		m_rot.z = D3DX_PI;
+	}
+	if (m_rot.z > D3DX_PI)
+	{
+		m_rot.z = -D3DX_PI;
+	}
+
+	//==========================================================================================================
+	// 速度限界
+	//==========================================================================================================
+	if (m_Speed.x >= m_fMaxSpeed)
+	{
+		m_Speed.x = m_fMaxSpeed;
+	}
+
+	if (m_Speed.x <= -m_fMaxSpeed)
+	{
+		m_Speed.x = -m_fMaxSpeed;
+	}
+
+	if (m_Speed.z >= m_fMaxSpeed)
+	{
+		m_Speed.z = m_fMaxSpeed;
+	}
+
+	if (m_Speed.z <= -m_fMaxSpeed)
+	{
+		m_Speed.z = -m_fMaxSpeed;
+	}
